@@ -1,0 +1,91 @@
+{
+ "r01": [
+  {
+   "type": "release",
+   "id": 1222814,
+   "master_id": 184736,
+   "title": "Clutchy Hopkins - Walking Sdrawkcab",
+   "year": "2008",
+   "country": "US",
+   "label": "Ubiquity",
+   "catno": "URLP221",
+   "format": "Vinyl, LP, Album",
+   "barcode": [
+    "7 80661 12211 1",
+    "URLP - 221 A, S - 6365 0"
+   ],
+   "url": "https://www.discogs.com/release/1222814-Clutchy-Hopkins-Walking-Sdrawkcab",
+   "via": "barcode",
+   "level": "pressing",
+   "cover": "covers/r1222814.jpg",
+   "details": {
+    "artist": "Clutchy Hopkins",
+    "title": "Walking Sdrawkcab",
+    "released": "01 Feb 2008",
+    "country": "US",
+    "formats": [
+     "Vinyl, LP, Album"
+    ],
+    "labels": [
+     "Ubiquity – URLP221"
+    ],
+    "matrix": [
+     "Runout Side A: URLP - 221 A, S - 6365 0",
+     "Runout Side B: URLP - 221 B, S - 6365 1"
+    ],
+    "barcodes": [
+     "7 80661 12211 1"
+    ],
+    "other_ids": [],
+    "notes": "All songs written, produced, arranged and mixed for Crate Digler records.\r\nPostcard included with this LP\r\n\r\n℗ © Ubiquity Recordings Inc.\r\n\r\nTrack Listing on vinyl is different from Cover or label listing.",
+    "have": 601,
+    "want": 524,
+    "tracks": 12
+   }
+  },
+  {
+   "type": "master",
+   "id": 184736,
+   "master_id": 184736,
+   "title": "Clutchy Hopkins - Walking Sdrawkcab",
+   "year": "2008",
+   "country": "US",
+   "label": "Ubiquity",
+   "catno": "URLP221",
+   "format": "Vinyl, LP, Album",
+   "barcode": [
+    "7 80661 12211 1",
+    "URLP - 221 A, S - 6365 0"
+   ],
+   "url": "https://www.discogs.com/master/184736-Clutchy-Hopkins-Walking-Sdrawkcab",
+   "via": "master",
+   "level": "album",
+   "cover": "covers/m184736.jpg",
+   "details": {
+    "artist": "Clutchy Hopkins",
+    "title": "Walking Sdrawkcab",
+    "released": "01 Feb 2008",
+    "country": "US",
+    "formats": [
+     "Vinyl, LP, Album"
+    ],
+    "labels": [
+     "Ubiquity – URLP221"
+    ],
+    "matrix": [
+     "Runout Side A: URLP - 221 A, S - 6365 0",
+     "Runout Side B: URLP - 221 B, S - 6365 1"
+    ],
+    "barcodes": [
+     "7 80661 12211 1"
+    ],
+    "other_ids": [],
+    "notes": "All songs written, produced, arranged and mixed for Crate Digler records.\r\nPostcard included with this LP\r\n\r\n℗ © Ubiquity Recordings Inc.\r\n\r\nTrack Listing on vinyl is different from Cover or label listing.",
+    "have": 601,
+    "want": 524,
+    "tracks": 12,
+    "note_level": "Album-level match. Details shown are from the main release (1222814); Discogs lists several versions."
+   }
+  }
+ ]
+}

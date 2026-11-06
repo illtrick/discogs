@@ -1,0 +1,35 @@
+{
+ "r01": {
+  "basis": "The barcode 780661122111 matches 1 pressing on Discogs.",
+  "master_id": 184736,
+  "pressings": [
+   {
+    "id": 1222814,
+    "artist": "Clutchy Hopkins",
+    "title": "Walking Sdrawkcab",
+    "year": 2008,
+    "released": "01 Feb 2008",
+    "country": "US",
+    "label": "Ubiquity",
+    "catno": "URLP221",
+    "discs": 1,
+    "descriptions": [
+     "LP",
+     "Album"
+    ],
+    "vinyl_text": "",
+    "matrix_a": "URLP - 221 A, S - 6365 0",
+    "matrix": [
+     "Runout Side A: URLP - 221 A, S - 6365 0",
+     "Runout Side B: URLP - 221 B, S - 6365 1"
+    ],
+    "barcodes": [
+     "7 80661 12211 1"
+    ],
+    "notes": "All songs written, produced, arranged and mixed for Crate Digler records.\r\nPostcard included with this LP\r\n\r\n℗ © Ubiquity Recordings Inc.\r\n\r\nTrack Listing on vinyl is different from Cover or label listing.",
+    "have": 601,
+    "url": "https://www.discogs.com/release/1222814"
+   }
+  ]
+ }
+}

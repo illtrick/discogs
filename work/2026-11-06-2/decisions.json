@@ -1,0 +1,26 @@
+{
+ "r01": {
+  "answers": [],
+  "artist": "Clutchy Hopkins",
+  "batch": "2026-11-06-2",
+  "catno": "URLP221",
+  "country": "US",
+  "discogs_title": "Clutchy Hopkins â€“ Walking Sdrawkcab",
+  "format": "LP, Album",
+  "label": "Ubiquity",
+  "level": "pressing",
+  "master_id": 184736,
+  "photos": [
+   "p001",
+   "p002"
+  ],
+  "record": "r01",
+  "release_id": 1222814,
+  "round": 0,
+  "status": "confirmed",
+  "title": "Walking Sdrawkcab",
+  "type": "release",
+  "updated": "2026-11-06T23:42:21.758Z",
+  "year": 2008
+ }
+}
