@@ -131,6 +131,19 @@ h3 { font: 600 18px var(--f-display); text-transform: uppercase; letter-spacing:
 .lightbox img { max-height: 92vh; max-width: 96vw; border-radius: 6px; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ok); color: var(--surface); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 8px; max-width: calc(100vw - 32px); box-shadow: 0 4px 16px rgba(0,0,0,.25); }
 #toast.bad { background: var(--bad) }
+#runner { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 12px 0; display: grid; gap: 8px; }
+#runner .rhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+#runner .rtitle { font: 600 15px var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
+#runner .rmsg { color: var(--muted); font-size: 14px; flex: 1 1 220px; min-width: 0; }
+#runner .rmsg.bad { color: var(--bad) }
+#runner .ractions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#runner select { font: 14px var(--f-body); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); max-width: 100%; }
+#runner .steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+#runner .steps li { padding: 3px 8px; border-radius: 999px; background: var(--chip-bg); color: var(--muted); }
+#runner .steps li.done { background: var(--ok); color: var(--surface); }
+#runner .steps li.now { background: var(--accent); color: var(--surface); }
+#runner pre { margin: 6px 0 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow: auto; background: var(--bg); padding: 8px; border-radius: 6px; }
+img[data-h]:not([src]) { background: var(--chip-bg); }
 @media (prefers-reduced-motion: no-preference) { .rec { transition: opacity .2s, border-color .2s } }
 </style>
 
@@ -150,6 +163,7 @@ h3 { font: 600 18px var(--f-display); text-transform: uppercase; letter-spacing:
 </header>
 <main>
   <div class="wrap">
+    <section id="runner" aria-live="polite" hidden></section>
     <p class="notice" id="notice" hidden></p>
     <div id="list"></div>
     <section id="unusedSec" hidden>
@@ -308,7 +322,7 @@ function guideHTML(r) {
   if (rem.length === 1) {
     const p = rem[0];
     body = `<p class="q">${P.length > 1 ? "That narrows it to one pressing" : "Only one pressing matches"}</p>
-      <div class="result">${coverFor(r, p) ? `<img src="${esc(coverFor(r, p))}" alt="">` : `<span class="ph"></span>`}
+      <div class="result">${coverFor(r, p) ? `<img ${I(coverFor(r, p))} alt="">` : `<span class="ph"></span>`}
         <div><h4>${esc(p.artist)} – ${esc(p.title)}</h4>${pressingFacts(p)}
         <a href="${esc(p.url)}" target="_blank" rel="noopener">Check it on Discogs ↗</a></div></div>
       <div class="actions"><button class="btn confirm" data-confirm="${p.id}">Confirm this pressing</button></div>`;
@@ -352,12 +366,12 @@ function recHTML(r, idx) {
   return `<article class="rec" data-id="${r.id}" data-status="${st}" data-idx="${idx}">
     <div>
       <div class="col-label">Your photo${r.photos.length > 1 ? "s" : ""}</div>
-      <img class="photo-main" src="${base}${r.photos[0]}.jpg" alt="Photo ${r.photos[0]}">
-      ${r.photos.length > 1 ? `<div class="thumbs">${r.photos.map((p, i) => `<img src="${base}${p}.jpg" class="${i ? "" : "on"}" alt="Photo ${p}">`).join("")}</div>` : ""}
+      <img class="photo-main" ${I(base + r.photos[0] + ".jpg")} alt="Photo ${r.photos[0]}">
+      ${r.photos.length > 1 ? `<div class="thumbs">${r.photos.map((p, i) => `<img ${I(base + p + ".jpg")} class="${i ? "" : "on"}" alt="Photo ${p}">`).join("")}</div>` : ""}
     </div>
     <div>
       <div class="col-label">Discogs cover</div>
-      ${shownCover ? `<img class="cover" src="${esc(shownCover)}" alt="Discogs cover">` : `<div class="nocover">${t ? "No cover image on Discogs" : "No Discogs match found"}</div>`}
+      ${shownCover ? `<img class="cover" ${I(shownCover)} alt="Discogs cover">` : `<div class="nocover">${t ? "No cover image on Discogs" : "No Discogs match found"}</div>`}
     </div>
     <div class="details">
       <div class="top">
@@ -399,12 +413,13 @@ function render(keepScroll) {
   renderHeader();
   const vis = visible();
   $("#list").innerHTML = vis.length ? vis.map((r, i) => recHTML(r, i)).join("")
-    : `<p class="notice">${S.filter === "todo" ? "Everything in this batch has been reviewed. Tell Claude to run the export." : "No records match this filter."}</p>`;
+    : `<p class="notice">${S.filter === "todo" ? "Everything in this batch has been reviewed. Use Finish review above." : "No records match this filter."}</p>`;
   S.focus = Math.min(S.focus, Math.max(vis.length - 1, 0));
   markFocus(!keepScroll);
   const un = S.data.unused || [];
   $("#unusedSec").hidden = !un.length;
-  $("#unused").innerHTML = un.map(p => `<img src="${S.data.photoBase}${p}.jpg" alt="Unassigned photo ${p}" title="${p}">`).join("");
+  queueMicrotask(hydrate);
+  $("#unused").innerHTML = un.map(p => `<img ${I(S.data.photoBase + p + ".jpg")} alt="Unassigned photo ${p}" title="${p}">`).join("");
 }
 function rerenderCard(r) {
   const el = document.querySelector(`.rec[data-id="${r.id}"]`);
@@ -413,6 +428,7 @@ function rerenderCard(r) {
   tmp.innerHTML = recHTML(r, +el.dataset.idx);
   el.replaceWith(tmp.firstElementChild);
   markFocus(false);
+  queueMicrotask(hydrate);
 }
 function markFocus(scroll) {
   document.querySelectorAll(".rec").forEach(el => el.classList.toggle("focus", +el.dataset.idx === S.focus));
@@ -535,24 +551,171 @@ function toast(msg, bad) {
 }
 function lightbox(src) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${src}" alt="">`; document.body.appendChild(d); }
 
-(async function start() {
+/* ---------- Local pipeline (host:record-pipeline MCP server) ----------
+   In the Claude desktop app, the page talks to pipeline/mcp_server.py on this computer:
+   it loads batches and photos from there and its buttons start pipeline runs.
+   Anywhere else it falls back to the published batch.json and has no Run buttons. */
+const HOST = "host:record-pipeline";
+const R = { mcp: null, ok: false, static: false, status: null, busy: false, poll: null, err: "",
+            imgs: new Map(), pending: new Set(), unsub: null, lastJob: null, waitFor: null };
+function I(path) {
+  if (!path) return "";
+  if (!R.ok || R.static) return `src="${esc(path)}"`;
+  const hit = R.imgs.get(path);
+  return hit ? `src="${hit}" data-h="${esc(path)}"` : `data-h="${esc(path)}"`;
+}
+async function hydrate() {
+  if (!R.ok || R.static || !S.data) return;
+  const paths = [...new Set([...document.querySelectorAll("img[data-h]:not([src])")].map(i => i.dataset.h))]
+    .filter(p => !R.pending.has(p));
+  const batch = S.data.batch;
+  const one = async path => {
+    R.pending.add(path);
+    try {
+      const res = await R.mcp.callTool(HOST, "get_image", { batch, path }, { cache: { staleTime: 3600e3, gcTime: 3600e3 } });
+      const b = (res.content || []).find(c => c.type === "image");
+      if (b) {
+        const url = `data:${b.mimeType};base64,${b.data}`;
+        R.imgs.set(path, url);
+        document.querySelectorAll(`img[data-h="${CSS.escape(path)}"]`).forEach(i => { i.src = url; });
+      }
+    } catch { /* keep the grey placeholder */ }
+    R.pending.delete(path);
+  };
+  for (let i = 0; i < paths.length; i += 4) await Promise.all(paths.slice(i, i + 4).map(one));
+}
+function errText(e) {
+  switch (e && e.code) {
+    case "server_not_connected": return "Can't reach the record-pipeline server. Open this artifact in the Claude desktop app on the computer that has the pipeline (setup is in the README).";
+    case "cancelled": return "You declined the request in the Claude app, so nothing ran.";
+    case "approval_required": case "not_in_manifest": return "This page isn't allowed to use the record-pipeline server. Allow it in the artifact's Permissions menu.";
+    case "tool_error": { const c = e.result && e.result.content && e.result.content[0]; return (c && c.text) || e.message; }
+    default: return (e && e.message) || "The pipeline didn't answer.";
+  }
+}
+async function refreshStatus() {
+  clearTimeout(R.poll);
   try {
-    const res = await fetch("batch.json", { cache: "no-store" });
-    S.data = await res.json();
-  } catch { notice("The batch data didn't load. Ask Claude to republish the review page."); return; }
-  $("#batchName").textContent = "Batch " + S.data.batch + " · " + S.data.records.length + " records";
-  render(true);
-  const db = window.claude?.use ? await window.claude.use("db") : null;
-  if (!db) { notice("Decisions can't be saved in this view. Open the artifact on claude.ai while signed in."); return; }
-  S.db = db;
+    const res = await R.mcp.callTool(HOST, "status", {}, { cache: false });
+    R.status = res.payload; R.ok = true; R.err = "";
+  } catch (e) {
+    R.err = errText(e);
+    if (["server_not_connected", "not_in_manifest", "approval_required", "not_granted", "capability_disabled"].includes(e.code)) R.ok = false;
+  }
+  const job = R.status && R.status.job;
+  const running = !!(job && job.state === "running");
+  // Did a run we started (R.waitFor) or watched (R.lastJob) just end?
+  const ours = R.waitFor && job && job.job !== R.waitFor.after;
+  const watched = R.lastJob && job && R.lastJob.job === job.job && R.lastJob.state === "running";
+  if ((ours || watched) && !running) {
+    R.waitFor = null;
+    toast(job.state === "failed" ? "The run failed: " + job.message : job.message, job.state === "failed");
+    if (job.batch && (job.outcome === "review" || job.outcome === "imported")) await loadBatch(job.batch);
+  }
+  if ((ours && running) || (R.waitFor && Date.now() - R.waitFor.t > 90000)) R.waitFor = null;
+  R.lastJob = job;
+  if (running || R.waitFor) R.poll = setTimeout(refreshStatus, 4000);
+  renderRunner();
+}
+function renderRunner() {
+  const el = $("#runner");
+  if (!R.mcp) { el.hidden = true; return; }
+  el.hidden = false;
+  const st = R.status || {}, job = st.job, running = !!(job && job.state === "running");
+  const recs = S.data ? S.data.records : [];
+  const open = recs.filter(r => statusOf(r) === "todo").length;
+  const redo = recs.filter(r => statusOf(r) === "rejected" || (statusOf(r) === "edited" && !cur(r).release_id)).length;
+  const info = (st.batches || []).find(b => S.data && b.batch === S.data.batch);
+  let msg;
+  if (!R.ok) msg = `<span class="rmsg bad">${esc(R.err || "Connecting to the record-pipeline server…")}</span>`;
+  else if (running) msg = `<span class="rmsg">Running: <b>${esc(job.step || "starting")}</b>${job.batch ? " · batch " + esc(job.batch) : ""}. You can keep reviewing.</span>`;
+  else if (job && job.state === "failed") msg = `<span class="rmsg bad">Last run failed: ${esc(job.message)}</span>`;
+  else msg = `<span class="rmsg">${st.unsorted ? `<b>${st.unsorted}</b> new photo${st.unsorted > 1 ? "s" : ""} waiting in the unsorted folder.` : "No new photos in the unsorted folder."}${job && job.state === "done" && S.data && job.batch === S.data.batch ? " Last run: " + esc(job.message) + "." : ""}</span>`;
+  const ready = (st.batches || []).filter(b => b.ready);
+  const pick = ready.length > 1 ? `<select id="batchPick" aria-label="Batch">${ready.map(b =>
+      `<option value="${esc(b.batch)}" ${S.data && b.batch === S.data.batch ? "selected" : ""}>Batch ${esc(b.batch)}${b.added ? " · imported" : ""}</option>`).join("")}</select>` : "";
+  const finishLabel = redo ? `re-search ${redo} edited/rejected` : info && info.added ? "export again" : "export & add to Discogs";
+  const dis = running || R.busy;
+  const acts = R.ok ? `<div class="ractions">
+      <button class="btn confirm" data-run="intake" ${dis || !st.unsorted ? "disabled" : ""}>Process ${st.unsorted ? st.unsorted + " " : ""}new photo${st.unsorted === 1 ? "" : "s"}</button>
+      ${S.data && !R.static ? `<button class="btn" data-run="finish" ${dis || open ? "disabled" : ""}>Finish review: ${finishLabel}</button>` : ""}
+      <button class="btn small" data-run="refresh" ${R.busy ? "disabled" : ""}>Refresh</button>${pick}</div>`
+    : `<div class="ractions"><button class="btn small" data-run="refresh">Try again</button></div>`;
+  const steps = job && (running || job.state === "failed") ? `<ol class="steps">${(job.steps || []).map(n =>
+      `<li class="${(job.done || []).includes(n) ? "done" : n === job.step ? "now" : ""}">${esc(n)}</li>`).join("")}</ol>` : "";
+  const log = job && job.log_tail && job.log_tail.length
+    ? `<details ${job.state === "failed" ? "open" : ""}><summary>Run log</summary><pre>${esc(job.log_tail.join("\n"))}</pre></details>` : "";
+  const hint = S.data && !R.static && open && R.ok && !running
+    ? `<div class="rmsg">${open} record${open > 1 ? "s" : ""} still need${open > 1 ? "" : "s"} a decision before you can finish this batch.</div>` : "";
+  el.innerHTML = `<div class="rhead"><span class="rtitle">Pipeline</span>${msg}</div>${acts}${steps}${hint}${log}`;
+}
+async function runAction(kind) {
+  if (kind === "refresh") { await refreshStatus(); return; }
+  R.busy = true; renderRunner();
+  try {
+    if (kind === "intake") {
+      await R.mcp.callTool(HOST, "start_intake", {});
+      toast("Processing the new photos. This takes a few minutes; you'll see each step here.");
+    } else {
+      const decisions = {};
+      S.data.records.forEach(r => { const d = cur(r); if (d) decisions[r.id] = d; });
+      await R.mcp.callTool(HOST, "finish_review", { batch: S.data.batch, decisions });
+      toast("Started. Edited and rejected records get re-searched; if none, it exports and adds them to Discogs.");
+    }
+    R.waitFor = { after: R.status && R.status.job ? R.status.job.job : null, t: Date.now() };
+  } catch (e) { toast(errText(e), true); }
+  R.busy = false;
+  await refreshStatus();
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-run]");
+  if (b && !b.disabled) runAction(b.dataset.run);
+});
+document.addEventListener("change", e => { if (e.target.id === "batchPick") loadBatch(e.target.value); });
+
+function subscribe() {
+  if (!S.db) return;
+  if (R.unsub) { try { R.unsub(); } catch {} }
   const timer = setTimeout(() => notice("Saved decisions can't be reached yet. What you see may be out of date."), 10000);
-  db.collection("decisions").where("batch", "==", S.data.batch).onSnapshot(snap => {
+  R.unsub = S.db.collection("decisions").where("batch", "==", S.data.batch).onSnapshot(snap => {
     if (!snap.metadata.fromCache) { clearTimeout(timer); notice(""); }
     const next = {};
     snap.docs.forEach(d => { const v = d.data(); if (v && v.record) next[v.record] = v; });
     S.decisions = next;
     // Don't redraw while someone is typing in a form.
     if (!document.activeElement || !document.activeElement.closest("form")) render(true);
+    renderRunner();
   }, () => { clearTimeout(timer); notice("Lost the connection to saved decisions. Reload the page to reconnect."); });
+}
+function showBatch(data, fromStatic) {
+  R.static = !!fromStatic;
+  S.data = data; S.decisions = {}; S.guide = {}; S.editing = {}; S.focus = 0;
+  if (!fromStatic) { try { localStorage.setItem("batch", data.batch); } catch {} }
+  $("#batchName").textContent = "Batch " + data.batch + " · " + data.records.length + " records";
+  render(true); subscribe(); renderRunner();
+}
+async function loadBatch(batch) {
+  try {
+    const res = await R.mcp.callTool(HOST, "get_batch", { batch }, { cache: false });
+    showBatch(res.payload, false);
+  } catch (e) { toast("Couldn't load batch " + batch + ": " + errText(e), true); }
+}
+
+(async function start() {
+  const use = n => (window.claude?.use ? window.claude.use(n) : Promise.resolve(null));
+  const [db, mcp] = await Promise.all([use("db"), use("mcp")]);
+  S.db = db; R.mcp = mcp;
+  if (mcp) { renderRunner(); await refreshStatus(); }
+  let saved = null; try { saved = localStorage.getItem("batch"); } catch {}
+  const ready = R.ok && R.status ? (R.status.batches || []).filter(b => b.ready) : [];
+  const want = ready.find(b => b.batch === saved) || ready[0];
+  if (want) await loadBatch(want.batch);
+  if (!S.data) {
+    try {
+      const res = await fetch("batch.json", { cache: "no-store" });
+      showBatch(await res.json(), true);
+    } catch { notice("The batch data didn't load. Ask Claude to republish the review page."); return; }
+  }
+  if (!db) notice("Decisions can't be saved in this view. Open the artifact on claude.ai while signed in.");
 })();
 </script>

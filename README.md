@@ -2,23 +2,27 @@
 
 Turn phone photos of records into Discogs collection entries and a spreadsheet.
 
-## Each new batch
+## Each new batch (from the artifact)
 
-1. Drop photos (HEIC/JPG) into `unsorted/`. A cover, back or label photo is fine; a barcode or catalog-number close-up is often best. Several photos taken in a row of the same record get grouped together.
-2. Ask Claude: **"run the record pipeline"**. Claude will:
-   - `python pipeline/prep.py <batch>`: convert the photos to `work/<batch>/photos/`
-   - read each photo and write `work/<batch>/ident.json` (artist, title, label, catalog #, barcode, confidence)
-   - `python pipeline/match.py <batch>`: search Discogs (barcode → catalog # → artist+title → album/master fallback) and save candidates and covers
-   - `python pipeline/enrich.py <batch>`: add the details that tell pressings apart (vinyl color, release date, runout etchings, notes, have/want)
-   - `python pipeline/pool.py <batch>`: list every pressing each record could be (from barcode, catalog # or all album versions), which drives the guided questions
-   - `python pipeline/build_review.py <batch>`: build `review/` and republish the **Record Intake** review artifact
-3. Review in the artifact: each card asks whether the album is right, then a few questions about your copy (vinyl color, catalog number, where it was made, runout etching…) until one pressing is left; confirm it. **Not sure** skips a question; **Edit** and **Reject** are always there. Keyboard: `J`/`K` move, `1`–`9` answer, `S` not sure, `B` back, `C` confirm, `E`/`R`, `U` undo.
-4. Tell Claude you're done. Claude saves your decisions to `work/<batch>/decisions.json` and runs
-   `python pipeline/research.py <batch>`, which re-searches every record you **edited** (using your artist/title/label/cat #) or **rejected** (excluding everything shown before; Claude re-reads the photos first). Those records come back as **To review** in the artifact. Repeat until nothing is edited or rejected, then Claude runs
-   `python pipeline/export.py <batch> --move-photos`, which writes:
-   - `export/<batch>_discogs_import.csv`: `release_id,Label,Title` for [discogs-import](https://github.com/guroot/discogs-import)
-   - `collection.xlsx`: the running master list to import into Google Sheets (each batch's rows are replaced on re-export, so it is safe to re-run)
-   - moves the originals to `processed/<batch>/`
+1. Drop photos (HEIC/JPG) into `unsorted/`. A cover, back or label photo is fine; a barcode or catalog-number close-up is often best. Photos taken in a row of the same record get grouped together.
+2. Open the **Record Intake** artifact in the Claude desktop app and press **Process N new photos** in the Pipeline panel. It runs, in the background:
+   - `prep.py`: convert photos to `work/<batch>/photos/` and move the originals to `processed/<batch>/`
+   - `identify.py`: Claude Code (headless, `claude -p`) reads every photo and writes `work/<batch>/ident.json`, checking Discogs with `search.py`
+   - `match.py` → `enrich.py` → `pool.py`: find candidates and every pressing each record could be
+   - `build_review.py`: the review data the artifact loads
+3. Review each card: confirm the album, answer a few questions until one pressing is left, confirm. **Edit** and **Reject** are always there. Keys: `J`/`K` move, `1`–`9` answer, `S` not sure, `B` back, `C` confirm, `E`/`R`, `U` undo.
+4. Press **Finish review**. If you edited or rejected anything, `research.py` re-searches those records (rejected ones are re-identified from the photos, excluding everything shown before) and they come back as **To review**. When everything is confirmed, the same button runs `export.py` (CSV for [discogs-import](https://github.com/guroot/discogs-import) + `collection.xlsx`) and `add_to_discogs.py`.
+
+Everything is driven by `pipeline/run.py intake` and `pipeline/run.py finish <batch>`, which you can also run by hand. Progress goes to `work/_runner/`.
+
+### One-time setup for the Run buttons
+
+The artifact reaches this folder through a small local MCP server, `pipeline/mcp_server.py` (standard library + Pillow). It exposes only fixed pipeline actions: status, read a batch or image, start intake, finish review.
+
+1. Register it with Claude (user scope):
+   `claude mcp add --scope user record-pipeline -- <path-to-python> <path-to-repo>/pipeline/mcp_server.py`
+2. Make sure the standalone Claude Code CLI is signed in (`claude auth login`). `identify.py` uses it.
+3. Restart the Claude desktop app, then open the artifact there. Run buttons only work in the desktop app, on this computer.
 
 ## Stage 2: adding to Discogs
 
@@ -29,7 +33,7 @@ Turn phone photos of records into Discogs collection entries and a spreadsheet.
 | Path | What it is |
 |---|---|
 | `config.ini` | Discogs credentials. Keep it private. |
-| `pipeline/` | The scripts |
+| `pipeline/` | The scripts (`run.py` orchestrates; `mcp_server.py` connects the artifact) |
 | `work/<batch>/` | Working data per batch (converted photos, identifications, matches, decisions) |
 | `review/` | The published review artifact (page, batch.json, photos, covers) |
 | `export/` | CSVs for import |
