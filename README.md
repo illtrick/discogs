@@ -22,7 +22,9 @@ The artifact reaches this folder through a small local MCP server, `pipeline/mcp
 1. Register it with Claude (user scope):
    `claude mcp add --scope user record-pipeline -- <path-to-python> <path-to-repo>/pipeline/mcp_server.py`
 2. Make sure the standalone Claude Code CLI is signed in (`claude auth login`). `identify.py` uses it.
-3. Restart the Claude desktop app, then open the artifact there. Run buttons only work in the desktop app, on this computer.
+3. Register it with the desktop app too (the artifact viewer only sees servers in the app's own config):
+   `python pipeline/setup_desktop_mcp.py` (backs up `claude_desktop_config.json` first)
+4. Fully quit and reopen the Claude desktop app, then open the artifact there. Run buttons only work in the desktop app, on this computer.
 
 ## Stage 2: adding to Discogs
 
