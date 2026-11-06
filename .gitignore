@@ -1,0 +1,24 @@
+# Secrets
+config.ini
+
+# Photos (originals and converted) and cover images
+unsorted/
+processed/
+work/*/photos/
+work/*/covers/
+review/photos/
+review/covers/
+*.heic
+*.HEIC
+*.jpg
+*.jpeg
+*.png
+
+# Regenerable / local-only
+work/cache/
+work/_runner/
+work/*/publish_files.json
+__pycache__/
+*.pyc
+*.log
+work/*/pub*.json

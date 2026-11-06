@@ -1,0 +1,606 @@
+[
+ {
+  "id": "r01",
+  "photos": [
+   "p001"
+  ],
+  "artist": "Eldridge Gravy & The Court Supreme",
+  "title": "Party Hard",
+  "barcode": "885767696303",
+  "confidence": "medium",
+  "notes": "Re-searched with your edit (round 1).",
+  "round": 1
+ },
+ {
+  "id": "r02",
+  "photos": [
+   "p002"
+  ],
+  "artist": "Dropkick Murphys",
+  "title": "Sing Loud, Sing Proud!",
+  "barcode": "045778043019",
+  "confidence": "medium",
+  "notes": "Barcode match; tracks: Caps and Bottles, Wild Rover, Spicy McHaggis Jig"
+ },
+ {
+  "id": "r03",
+  "photos": [
+   "p003"
+  ],
+  "artist": "Dropkick Murphys",
+  "title": "The Gang's All Here",
+  "barcode": "045778041312",
+  "confidence": "high"
+ },
+ {
+  "id": "r04",
+  "photos": [
+   "p004"
+  ],
+  "artist": "Slint",
+  "title": "Spiderland",
+  "catno": "TG064LP-C2",
+  "barcode": "036172076475",
+  "confidence": "high",
+  "notes": "Limited edition purple vinyl"
+ },
+ {
+  "id": "r05",
+  "photos": [
+   "p005"
+  ],
+  "artist": "Dirty Three",
+  "title": "Cinder",
+  "label": "Touch And Go",
+  "barcode": "036172099313",
+  "confidence": "low",
+  "notes": "Identified from the barcode on Discogs"
+ },
+ {
+  "id": "r06",
+  "photos": [
+   "p006",
+   "p007"
+  ],
+  "artist": "Bob & Doug McKenzie",
+  "title": "Great White North",
+  "label": "Anthem",
+  "confidence": "high"
+ },
+ {
+  "id": "r07",
+  "photos": [
+   "p008"
+  ],
+  "artist": "Slint",
+  "title": "Breadcrumb Trail / Good Morning, Captain",
+  "label": "Touch And Go",
+  "barcode": "036172106684",
+  "confidence": "medium",
+  "notes": "Light green vinyl, 45 RPM, /1500, original 1990 mixes"
+ },
+ {
+  "id": "r08",
+  "photos": [
+   "p009",
+   "p010",
+   "p011"
+  ],
+  "artist": "Various",
+  "title": "Flashdance (Original Soundtrack From The Motion Picture)",
+  "label": "Casablanca",
+  "catno": "NBLP 7278",
+  "confidence": "high"
+ },
+ {
+  "id": "r09",
+  "photos": [
+   "p012"
+  ],
+  "artist": "Andrew Lloyd Webber & Tim Rice",
+  "title": "Jesus Christ Superstar",
+  "label": "Decca",
+  "catno": "DXSA 7206",
+  "confidence": "high"
+ },
+ {
+  "id": "r10",
+  "photos": [
+   "p013",
+   "p014"
+  ],
+  "artist": "Grails",
+  "title": "Black Tar Prophecies Vol's 1, 2, & 3",
+  "label": "Important Records",
+  "catno": "IMPREC 105",
+  "confidence": "high"
+ },
+ {
+  "id": "r11",
+  "photos": [
+   "p015"
+  ],
+  "artist": "Clutchy Hopkins Meets Lord Kenjamin",
+  "title": "Music Is My Medicine",
+  "label": "Ubiquity",
+  "barcode": "780661124412",
+  "confidence": "low",
+  "notes": "Identified from the barcode on Discogs (Ubiquity)"
+ },
+ {
+  "id": "r12",
+  "photos": [
+   "p016"
+  ],
+  "artist": "Various",
+  "title": "ECM sampler (1980)",
+  "label": "ECM",
+  "catno": "PRO-A-850",
+  "confidence": "medium",
+  "notes": "Promo sampler, Warner Bros distribution"
+ },
+ {
+  "id": "r13",
+  "photos": [
+   "p017",
+   "p018"
+  ],
+  "artist": "Mussorgsky / Münchner Philharmoniker, Marc Andreae",
+  "title": "Pictures At An Exhibition",
+  "label": "BASF",
+  "catno": "BC 22128",
+  "confidence": "high"
+ },
+ {
+  "id": "r14",
+  "photos": [
+   "p019",
+   "p020"
+  ],
+  "artist": "Murcof",
+  "title": "Cosmos",
+  "label": "The Leaf Label",
+  "catno": "BAY 59V",
+  "confidence": "high",
+  "notes": "Limited edition triple vinyl, 45 RPM"
+ },
+ {
+  "id": "r15",
+  "photos": [
+   "p021"
+  ],
+  "artist": "Deep Listening Band",
+  "title": "Then & Now Now & Then",
+  "confidence": "high"
+ },
+ {
+  "id": "r16",
+  "photos": [
+   "p022",
+   "p023"
+  ],
+  "artist": "Dr. John",
+  "title": "The Sun, Moon & Herbs",
+  "confidence": "high"
+ },
+ {
+  "id": "r17",
+  "photos": [
+   "p024"
+  ],
+  "artist": "KRS-One",
+  "title": "KRS-One",
+  "label": "Jive",
+  "catno": "01241-41570-1",
+  "barcode": "012414157010",
+  "confidence": "high",
+  "notes": "Copy 1 of 2"
+ },
+ {
+  "id": "r18",
+  "photos": [
+   "p025"
+  ],
+  "artist": "Santana",
+  "title": "The Swing Of Delight",
+  "confidence": "high",
+  "notes": "Credited as Devadip Carlos Santana"
+ },
+ {
+  "id": "r19",
+  "photos": [
+   "p026",
+   "p027"
+  ],
+  "artist": "Dr. John",
+  "title": "Gris-Gris",
+  "label": "Atco",
+  "catno": "SD 33-234",
+  "confidence": "high",
+  "notes": "Collectors limited edition colored vinyl reissue (Rhino/Scorpio)"
+ },
+ {
+  "id": "r20",
+  "photos": [
+   "p028"
+  ],
+  "artist": "Machinefabriek",
+  "title": "Marijn",
+  "barcode": "3324252627226",
+  "confidence": "high",
+  "notes": "Re-identified (round 1): back cover lists the tracks Kreukeltape and Lawine; barcode 3 32425 26272 6 matches the Burning World LP.",
+  "exclude": [
+   381665,
+   624777,
+   2603611,
+   3073809,
+   5049957,
+   7662550,
+   8825268,
+   9164247,
+   9313315
+  ],
+  "round": 1,
+  "label": "Burning World Records"
+ },
+ {
+  "id": "r21",
+  "photos": [
+   "p029"
+  ],
+  "artist": "Nina Hagen",
+  "title": "Nunsexmonkrock",
+  "confidence": "high"
+ },
+ {
+  "id": "r22",
+  "photos": [
+   "p030"
+  ],
+  "artist": "Clutchy Hopkins",
+  "title": "The Story Teller",
+  "label": "Ubiquity",
+  "barcode": "780661126713",
+  "confidence": "medium",
+  "notes": "2010 Ubiquity; 'Il narratore / Der Erzähler / O contador'"
+ },
+ {
+  "id": "r23",
+  "photos": [
+   "p031"
+  ],
+  "artist": "Gifts From Enola",
+  "title": "From Fathoms",
+  "label": "The Mylene Sheath",
+  "catno": "SHEATH012",
+  "confidence": "medium",
+  "notes": "2009; catalog match"
+ },
+ {
+  "id": "r24",
+  "photos": [
+   "p032",
+   "p033"
+  ],
+  "artist": "Dilated Peoples",
+  "title": "20/20",
+  "confidence": "high"
+ },
+ {
+  "id": "r25",
+  "photos": [
+   "p034",
+   "p035"
+  ],
+  "artist": "Set Fire To Flames",
+  "title": "Telegraphs In Negative / Mouths Trapped In Static",
+  "label": "Alien8",
+  "catno": "ALIENLP39",
+  "confidence": "high"
+ },
+ {
+  "id": "r26",
+  "photos": [
+   "p036",
+   "p037"
+  ],
+  "artist": "The Fae",
+  "title": "Books With Maps, Vol. 1: A Midsummer Night",
+  "label": "Glory Or Death Records",
+  "confidence": "high",
+  "notes": "2022"
+ },
+ {
+  "id": "r27",
+  "photos": [
+   "p038",
+   "p039"
+  ],
+  "artist": "Blockhead",
+  "title": "Music By Cavelight",
+  "label": "Ninja Tune",
+  "catno": "ZEN 88",
+  "barcode": "5054429157574",
+  "confidence": "medium",
+  "notes": "Barcode is a later reissue"
+ },
+ {
+  "id": "r28",
+  "photos": [
+   "p040"
+  ],
+  "artist": "Blockhead",
+  "title": "Downtown Science",
+  "label": "Ninja Tune",
+  "catno": "ZEN113C",
+  "barcode": "5054429157543",
+  "confidence": "high"
+ },
+ {
+  "id": "r29",
+  "photos": [
+   "p041",
+   "p042"
+  ],
+  "artist": "Blockhead",
+  "title": "The Music Scene",
+  "label": "Ninja Tune",
+  "catno": "ZEN149C",
+  "barcode": "5054429157550",
+  "confidence": "high",
+  "notes": "ZEN149 is The Music Scene, not Uncle Tony's Coloring Book"
+ },
+ {
+  "id": "r30",
+  "photos": [
+   "p043"
+  ],
+  "artist": "All Them Witches",
+  "title": "Nothing As The Ideal",
+  "label": "New West Records",
+  "catno": "NW5561",
+  "barcode": "607396556113",
+  "confidence": "high",
+  "notes": "2021 limited edition colored vinyl"
+ },
+ {
+  "id": "r31",
+  "photos": [
+   "p044"
+  ],
+  "artist": "Teho Teardo & Blixa Bargeld",
+  "title": "Nerissimo",
+  "label": "Specula",
+  "catno": "SPECULA008LP",
+  "barcode": "8016670121732",
+  "confidence": "low",
+  "notes": "Identified from the barcode on Discogs"
+ },
+ {
+  "id": "r32",
+  "photos": [
+   "p045"
+  ],
+  "artist": "KRS-One",
+  "title": "KRS-One",
+  "label": "Jive",
+  "catno": "01241-41570-1",
+  "barcode": "012414157010",
+  "confidence": "high",
+  "notes": "Copy 2 of 2 (duplicate)"
+ },
+ {
+  "id": "r33",
+  "photos": [
+   "p046",
+   "p047"
+  ],
+  "artist": "Claudio Arrau, Concertgebouw Orchestra, Bernard Haitink",
+  "title": "Beethoven: Klavierkonzert Nr. 5",
+  "label": "Philips",
+  "catno": "839 600 LY",
+  "confidence": "high"
+ },
+ {
+  "id": "r34",
+  "photos": [
+   "p048"
+  ],
+  "artist": "Russian Circles",
+  "title": "Enter",
+  "label": "Friction Records / Hewhocorrupts Inc / Flameshovel",
+  "catno": "FRIC-031",
+  "confidence": "low",
+  "notes": "Identified from catalog numbers FRIC-031 / HWC015 / DIG035"
+ },
+ {
+  "id": "r35",
+  "photos": [
+   "p049"
+  ],
+  "artist": "Nina Hagen",
+  "title": "Angstlos",
+  "label": "CBS",
+  "catno": "CBS 25667",
+  "confidence": "low",
+  "notes": "Identified from catalog number CBS 25667 (German pressing)"
+ },
+ {
+  "id": "r36",
+  "photos": [
+   "p050"
+  ],
+  "artist": "Captain Beefheart And The Magic Band",
+  "title": "Dust Sucker",
+  "label": "Ozit",
+  "catno": "OZIT LP 8006",
+  "confidence": "low",
+  "notes": "Identified from catalog number OZIT LP 8006; green vinyl"
+ },
+ {
+  "id": "r37",
+  "photos": [
+   "p051"
+  ],
+  "artist": "Crippled Black Phoenix",
+  "title": "A love of shared disasters",
+  "label": "Invada",
+  "catno": "INV-035",
+  "barcode": "823566427728",
+  "confidence": "medium",
+  "notes": "Re-searched with your edit (round 1).",
+  "round": 1
+ },
+ {
+  "id": "r38",
+  "photos": [
+   "p053",
+   "p054"
+  ],
+  "artist": "Turiya Alice Coltrane / Devadip Carlos Santana",
+  "title": "Illuminations",
+  "confidence": "high"
+ },
+ {
+  "id": "r39",
+  "photos": [
+   "p055"
+  ],
+  "artist": "Buddy Guy",
+  "title": "Stone Crazy!",
+  "label": "Alligator",
+  "catno": "AL 4723",
+  "confidence": "high"
+ },
+ {
+  "id": "r40",
+  "photos": [
+   "p056",
+   "p057"
+  ],
+  "artist": "Godspeed You Black Emperor!",
+  "title": "Lift Your Skinny Fists Like Antennas To Heaven",
+  "label": "Constellation",
+  "catno": "CST012",
+  "confidence": "high"
+ },
+ {
+  "id": "r41",
+  "photos": [
+   "p058"
+  ],
+  "artist": "Portishead",
+  "title": "Third",
+  "barcode": "602517641044",
+  "confidence": "low",
+  "notes": "Identified from the barcode on Discogs"
+ },
+ {
+  "id": "r42",
+  "photos": [
+   "p059",
+   "p060"
+  ],
+  "artist": "Anti-Pop Consortium",
+  "title": "Tragic Epilogue",
+  "label": "75 Ark",
+  "barcode": "676217500710",
+  "confidence": "high"
+ },
+ {
+  "id": "r43",
+  "photos": [
+   "p061",
+   "p062"
+  ],
+  "artist": "Shellac",
+  "title": "Excellent Italian Greyhound",
+  "label": "Touch And Go",
+  "catno": "TG303",
+  "confidence": "high"
+ },
+ {
+  "id": "r44",
+  "photos": [
+   "p063"
+  ],
+  "artist": "Shellac",
+  "title": "Dude Incredible",
+  "label": "Touch And Go",
+  "catno": "TG404LP",
+  "barcode": "036172110414",
+  "confidence": "high",
+  "notes": "180g vinyl + CD"
+ },
+ {
+  "id": "r45",
+  "photos": [
+   "p064",
+   "p065"
+  ],
+  "artist": "Captain Beefheart",
+  "title": "The Spotlight Kid",
+  "label": "Reprise",
+  "confidence": "high"
+ },
+ {
+  "id": "r46",
+  "photos": [
+   "p066",
+   "p067"
+  ],
+  "artist": "Shellac",
+  "title": "The End Of Radio",
+  "label": "Touch And Go",
+  "catno": "TG424LP",
+  "confidence": "high",
+  "notes": "Peel Session 14 July 1994"
+ },
+ {
+  "id": "r47",
+  "photos": [
+   "p068"
+  ],
+  "artist": "The Milk Carton Kids",
+  "title": "The Ash & Clay",
+  "label": "ANTI-",
+  "confidence": "medium",
+  "notes": "2013 ANTI-; title guessed from year"
+ },
+ {
+  "id": "r48",
+  "photos": [
+   "p069"
+  ],
+  "artist": "Shellac",
+  "title": "To All Trains",
+  "label": "Touch And Go",
+  "catno": "TG444LP",
+  "barcode": "036172114412",
+  "confidence": "high"
+ },
+ {
+  "id": "r49",
+  "photos": [
+   "p070"
+  ],
+  "artist": "Slint",
+  "title": "Untitled (Albini Rough Mixes)",
+  "label": "Touch And Go",
+  "catno": "TG445LP-C1",
+  "barcode": "036172114535",
+  "confidence": "high",
+  "notes": "Identified from barcode; TG445LP-C1"
+ },
+ {
+  "id": "r50",
+  "photos": [
+   "p071"
+  ],
+  "artist": "Shellac",
+  "title": "1000 Hurts",
+  "label": "Touch And Go",
+  "confidence": "medium",
+  "notes": "Tracklist only (Prayer To God, Squirrel Song...); pressing unknown"
+ }
+]

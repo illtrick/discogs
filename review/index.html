@@ -1,0 +1,558 @@
+<meta charset="utf-8">
+<title>Record Intake Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky header with progress + filters, then one card per record:
+   your photos | Discogs cover | guided pressing finder (one question at a time) */
+:root {
+  --bg: #eef0f2;
+  --surface: #ffffff;
+  --ink: #1b2230;
+  --muted: #5d6778;
+  --line: #d5d9e0;
+  --accent: #1f6f8b;
+  --accent-ink: #ffffff;
+  --ok: #2e7d4f;
+  --warn: #a86a12;
+  --bad: #b23a3a;
+  --chip-bg: #e3e7ec;
+  --f-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --ink: #e6e9ee; --muted: #9aa4b3; --line: #2c3440;
+  --accent: #5fb3cf; --accent-ink: #0d1a20; --ok: #5fc48a; --warn: #e0a54a; --bad: #e57373; --chip-bg: #252d38;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --ink: #e6e9ee; --muted: #9aa4b3; --line: #2c3440;
+  --accent: #5fb3cf; --accent-ink: #0d1a20; --ok: #5fc48a; --warn: #e0a54a; --bad: #e57373; --chip-bg: #252d38;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header .wrap { padding-block: 12px; display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+h1 { font: 700 26px/1 var(--f-display); letter-spacing: .02em; text-transform: uppercase; margin: 0; }
+.batch { font: 500 12px var(--f-mono); color: var(--muted); }
+.progress { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.bar { height: 6px; background: var(--chip-bg); border-radius: 3px; overflow: hidden; display: flex; }
+.bar span { display: block; height: 100% }
+.counts { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { font: 600 13px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.keys { font-size: 12px; color: var(--muted); width: 100%; }
+kbd { font: 500 11px var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--bg); }
+.notice { margin: 16px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--chip-bg); color: var(--muted); font-size: 14px; }
+
+main .wrap { padding-block: 16px 64px; display: flex; flex-direction: column; gap: 14px; }
+#list { display: flex; flex-direction: column; gap: 14px; }
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 230px) minmax(0, 1fr); gap: 18px; padding: 16px; border-left: 5px solid var(--line); scroll-margin-top: 140px; }
+.rec.focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rec[data-status="confirmed"] { border-left-color: var(--ok) }
+.rec[data-status="edited"] { border-left-color: var(--accent) }
+.rec[data-status="rejected"] { border-left-color: var(--bad); opacity: .72 }
+@media (max-width: 900px) { .rec { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .details { grid-column: 1 / -1 } }
+@media (max-width: 520px) { .rec { grid-template-columns: minmax(0,1fr); } }
+.col-label { font: 600 11px var(--f-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.photo-main { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--chip-bg); cursor: zoom-in; display: block; }
+.thumbs { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.thumbs img { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+.thumbs img.on { border-color: var(--accent) }
+.cover { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--chip-bg); display: block; cursor: zoom-in; }
+.nocover { width: 100%; aspect-ratio: 1; border-radius: 6px; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 12px; }
+.details { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.guess { min-width: 0 }
+.guess h2 { font: 600 22px/1.1 var(--f-display); margin: 0; text-wrap: balance; }
+.guess .artist { font-size: 15px; color: var(--muted); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: 600 11px var(--f-body); text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px; background: var(--chip-bg); color: var(--muted); white-space: nowrap; }
+.chip.high { color: var(--ok) } .chip.medium { color: var(--warn) } .chip.low { color: var(--bad) }
+.chip.st-confirmed { background: var(--ok); color: var(--surface) }
+.chip.st-edited { background: var(--accent); color: var(--accent-ink) }
+.chip.st-rejected { background: var(--bad); color: var(--surface) }
+.note { font-size: 13.5px; color: var(--muted); font-style: italic; }
+
+/* Guided finder */
+.guide { border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); }
+.guide .basis { font-size: 12.5px; color: var(--muted); }
+.guide .remain { font: 500 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.guide .q { font: 600 19px/1.2 var(--f-display); margin: 0; }
+.guide .hint { font-size: 13.5px; color: var(--muted); margin: -4px 0 0; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { font: 600 14px var(--f-body); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; display: inline-flex; gap: 8px; align-items: baseline; max-width: 100%; }
+.opt .kn { font: 500 11px var(--f-mono); color: var(--muted); }
+.opt .ct { font: 400 12px var(--f-body); color: var(--muted); }
+.opt.mono { font: 500 13px var(--f-mono); overflow-wrap: anywhere; }
+.opt:hover { border-color: var(--accent) }
+.opt.quiet { background: transparent; color: var(--muted); font-weight: 400; }
+.typein { display: flex; gap: 6px; flex-wrap: wrap; }
+.typein input { font: 14px var(--f-mono); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); flex: 1 1 200px; min-width: 0; }
+.trail { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; }
+.trail span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+.trail b { color: var(--ink); font-weight: 600 }
+.result { display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 12px; align-items: start; }
+.result img, .result .ph { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; background: var(--chip-bg); }
+.result h4 { margin: 0; font-size: 15px; }
+.kv { font-size: 13px; display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 2px 10px; }
+.kv dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.kv dd.mono { font: 12px var(--f-mono); }
+.shortlist { display: flex; flex-direction: column; gap: 6px; }
+.pr { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.pr .s { font-size: 13px; overflow-wrap: anywhere; }
+.pr .m { font: 11.5px var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.all { font-size: 13px; }
+.all summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.all .shortlist { margin-top: 8px; max-height: 360px; overflow-y: auto; }
+a { color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: 600 14px var(--f-body); padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn:focus-visible, .filters button:focus-visible, .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.btn.confirm { background: var(--ok); border-color: var(--ok); color: var(--surface) }
+.btn.reject { color: var(--bad) }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+form.edit { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; background: var(--bg); padding: 10px; border-radius: 8px; }
+form.edit label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); min-width: 0; }
+form.edit label.wide { grid-column: 1 / -1 }
+form.edit input, form.edit textarea { font: 14px var(--f-body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); width: 100%; }
+form.edit .row { grid-column: 1 / -1; display: flex; gap: 8px; }
+@media (max-width: 520px) { form.edit { grid-template-columns: minmax(0,1fr) } }
+.unused { display: flex; flex-wrap: wrap; gap: 8px; }
+.unused img { width: 120px; height: 120px; object-fit: cover; border-radius: 6px; cursor: zoom-in; }
+h3 { font: 600 18px var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 6px; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 20; display: grid; place-items: center; padding: 24px; cursor: zoom-out; }
+.lightbox img { max-height: 92vh; max-width: 96vw; border-radius: 6px; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ok); color: var(--surface); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 8px; max-width: calc(100vw - 32px); box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+#toast.bad { background: var(--bad) }
+@media (prefers-reduced-motion: no-preference) { .rec { transition: opacity .2s, border-color .2s } }
+</style>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>Record Intake</h1>
+      <div class="batch" id="batchName">Loading batch…</div>
+    </div>
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+      <div class="counts" id="counts"></div>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter records"></div>
+    <div class="keys"><kbd>J</kbd>/<kbd>K</kbd> next/prev record · <kbd>1</kbd>–<kbd>9</kbd> answer · <kbd>S</kbd> not sure · <kbd>B</kbd> back a question · <kbd>C</kbd> confirm · <kbd>E</kbd> edit · <kbd>R</kbd> reject · <kbd>U</kbd> undo decision</div>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <p class="notice" id="notice" hidden></p>
+    <div id="list"></div>
+    <section id="unusedSec" hidden>
+      <h3>Photos not assigned to a record</h3>
+      <p class="note">These were blurry or unreadable. If one shows a record I missed, tell Claude which photo.</p>
+      <div class="unused" id="unused"></div>
+    </section>
+  </div>
+</main>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+const S = { data: null, decisions: {}, filter: "todo", focus: 0, db: null, guide: {}, editing: {} };
+const $ = (s, el = document) => el.querySelector(s);
+const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const FILTERS = [["todo", "To review"], ["low", "Low confidence"], ["confirmed", "Confirmed"], ["edited", "Edited"], ["rejected", "Rejected"], ["all", "All"]];
+
+/* ---------- Guided questions ----------
+   Each question reads one attribute of a pressing. An empty value means Discogs doesn't
+   say, so that pressing stays in the running whatever you answer. The next question is
+   the one that is expected to rule out the most pressings, weighted by how easy it is
+   to check on the physical record. */
+const PRINTED_FLAGS = ["Limited Edition", "Numbered", "Gatefold", "Picture Disc", "Record Store Day", "Deluxe Edition", "Special Edition", "Promo", "Club Edition", "Test Pressing"];
+const QUESTIONS = [
+  { key: "vinyl", cost: 1, q: "Which of these describes your vinyl?", hint: "Look at the disc's color, and at any sticker or text about weight (180g) or edition.",
+    val: p => p.vinyl_text || "Black" },
+  { key: "discs", cost: 1, q: "How many records are in the sleeve?", hint: "",
+    val: p => p.discs + (p.discs > 1 ? " records" : " record") },
+  { key: "catno", cost: 1.2, type: true, q: "What catalog number is printed on the spine, back or label?", hint: "Usually letters and numbers near the label logo, like TG303 or NBLP 7278.",
+    val: p => p.catno || "" },
+  { key: "label", cost: 1.2, q: "Which record label is on the back cover or the disc label?", hint: "",
+    val: p => p.label || "" },
+  { key: "country", cost: 1.5, q: "Where was it made?", hint: "Look for “Made in…”, “Printed in…” or “Manufactured in…” on the back cover or the disc label.",
+    val: p => p.country && p.country !== "Unknown" ? p.country : "" },
+  ...PRINTED_FLAGS.map(f => ({ key: "flag:" + f, cost: 1.6, q: f === "Gatefold" ? "Does the cover open like a book (a gatefold)?" : `Does the cover, a sticker or the label say “${f}”?`, hint: "",
+    val: p => (p.descriptions || []).includes(f) ? "Yes" : "No" })),
+  { key: "year", cost: 2.2, q: "What is the most recent year printed on the back or the label?", hint: "Check the ℗ and © lines. Reissues often show both the original year and a newer one.",
+    val: p => p.year ? String(p.year) : "" },
+  { key: "matrix", cost: 3, type: true, mono: true, q: "What is etched in the dead wax on side A?", hint: "The smooth band between the last song and the label has letters and numbers scratched or stamped into it. Pick the one that matches, or type what you can read.",
+    val: p => p.matrix_a || "" },
+];
+const QK = Object.fromEntries(QUESTIONS.map(q => [q.key, q]));
+
+function g(r) { return S.guide[r.id] || (S.guide[r.id] = { albumOk: null, answers: [], pick: null }); }
+function pool(r) { return (r.pool && r.pool.pressings) || []; }
+function matchAnswer(p, a) {
+  if (a.skip) return true;                   // "Not sure" marks the question as asked; filters nothing
+  const v = QK[a.key].val(p);
+  if (!v) return true;                       // Discogs doesn't say: keep it
+  if (a.none) return !a.values.includes(v);  // "None of these"
+  if (a.typed) { const t = norm(a.typed), n = norm(v); return n.includes(t) || t.includes(n); }
+  return v === a.value;
+}
+function remaining(r) {
+  const st = g(r);
+  return pool(r).filter(p => st.answers.every(a => matchAnswer(p, a)));
+}
+function nextQuestion(r) {
+  const st = g(r), rem = remaining(r), N = rem.length;
+  if (N <= 1) return null;
+  const asked = new Set(st.answers.map(a => a.key));
+  let best = null;
+  for (const q of QUESTIONS) {
+    if (asked.has(q.key)) continue;
+    const groups = new Map(); let blank = 0;
+    rem.forEach(p => { const v = q.val(p); if (!v) blank++; else groups.set(v, (groups.get(v) || 0) + 1); });
+    if (groups.size < 2) continue;
+    let exp = 0;
+    groups.forEach(n => { exp += (n / N) * (n + blank); });
+    const gain = (N - exp) / q.cost;
+    if (gain > 0.05 && (!best || gain > best.gain)) best = { q, gain, groups: [...groups.entries()].sort((a, b) => b[1] - a[1]) };
+  }
+  return best;
+}
+
+/* ---------- Status / filters ---------- */
+function docId(rid) { return S.data.batch + "__" + rid; }
+// A decision counts only for the review round it was made in; re-searched records come back as "To review".
+function cur(r) { const d = S.decisions[r.id]; return d && (d.round || 0) >= (r.round || 0) ? d : null; }
+function statusOf(r) { return cur(r)?.status || "todo"; }
+function matches(r, f = S.filter) {
+  const st = statusOf(r);
+  if (f === "todo") return st === "todo";
+  if (f === "low") return r.confidence === "low";
+  if (f === "all") return true;
+  return st === f;
+}
+function visible() { return S.data.records.filter(r => matches(r)); }
+function notice(msg) { const n = $("#notice"); n.textContent = msg || ""; n.hidden = !msg; }
+function topCand(r) { return (r.candidates || [])[0]; }
+function coverFor(r, p) {
+  if (p && S.data.covers && S.data.covers.includes("r" + p.id)) return "covers/r" + p.id + ".jpg";
+  const c = (r.candidates || []).find(c => c.cover);
+  return c ? c.cover : null;
+}
+
+function renderHeader() {
+  const recs = S.data.records, n = recs.length;
+  const c = { confirmed: 0, edited: 0, rejected: 0, todo: 0 };
+  recs.forEach(r => c[statusOf(r)]++);
+  $("#counts").textContent = `${n - c.todo} of ${n} reviewed · ${c.confirmed} confirmed · ${c.edited} edited · ${c.rejected} rejected`;
+  $("#bar").innerHTML = ["confirmed", "edited", "rejected"].map(k =>
+    `<span style="width:${(c[k] / n) * 100}%;background:var(--${k === "confirmed" ? "ok" : k === "edited" ? "accent" : "bad"})"></span>`).join("");
+  $("#filters").innerHTML = FILTERS.map(([k, l]) =>
+    `<button type="button" data-f="${k}" aria-pressed="${S.filter === k}">${l} ${recs.filter(r => matches(r, k)).length}</button>`).join("");
+}
+
+/* ---------- Card pieces ---------- */
+function pressingFacts(p) {
+  const fmt = [p.discs > 1 ? p.discs + "× LP" : "", ...(p.descriptions || []), p.vinyl_text].filter(Boolean).join(", ");
+  return `<dl class="kv">
+    <dt>Released</dt><dd>${esc(p.released || p.year || "—")} · ${esc(p.country)}</dd>
+    <dt>Label</dt><dd>${esc(p.label)} – ${esc(p.catno)}</dd>
+    <dt>Format</dt><dd>${esc(fmt || "—")}</dd>
+    ${p.matrix && p.matrix.length ? `<dt>Runout</dt><dd class="mono">${p.matrix.map(esc).join("<br>")}</dd>` : ""}
+    ${p.barcodes && p.barcodes.length ? `<dt>Barcode</dt><dd class="mono">${esc(p.barcodes[0])}</dd>` : ""}
+    <dt>Owned by</dt><dd>${(p.have || 0).toLocaleString()} Discogs users</dd>
+  </dl>`;
+}
+function shortRow(p, btnLabel) {
+  const fmt = [...(p.descriptions || []), p.vinyl_text].filter(Boolean).join(", ");
+  return `<div class="pr">
+    <div><div class="s"><b>${esc(p.released || p.year || "?")}</b> · ${esc(p.country)} · ${esc(p.label)} ${esc(p.catno)} · ${esc(fmt)}</div>
+    ${p.matrix_a ? `<div class="m">Runout A: ${esc(p.matrix_a)}</div>` : ""}
+    <div class="m">${(p.have || 0).toLocaleString()} own · <a href="${esc(p.url)}" target="_blank" rel="noopener">Discogs ↗</a></div></div>
+    <button class="btn small" data-pick="${p.id}">${btnLabel}</button>
+  </div>`;
+}
+
+function guideHTML(r) {
+  const st = g(r), P = pool(r), d = cur(r);
+  if (d && d.status !== "todo") {
+    return `<div class="guide"><div class="basis">${d.status === "rejected" ? "Rejected." : `Saved: ${esc(d.discogs_title || [d.artist, d.title].join(" – "))}${d.release_id ? ` · <a href="https://www.discogs.com/${d.type === "master" ? "master" : "release"}/${d.release_id}" target="_blank" rel="noopener">Discogs ↗</a>` : ""}${d.level === "album" ? " (album only)" : ""}`}</div>
+      ${d.answers && d.answers.length ? `<div class="trail">${d.answers.map(a => `<span>${esc(a)}</span>`).join("")}</div>` : ""}</div>`;
+  }
+  if (!P.length) {
+    return `<div class="guide"><p class="q">No Discogs pressings to choose from</p>
+      <p class="hint">I couldn't find this record on Discogs. Use Edit to type the details or paste a Discogs link.</p></div>`;
+  }
+  // Step 0: right album?
+  if (st.albumOk === null) {
+    return `<div class="guide">
+      <p class="q">Is this the right album?</p>
+      <p class="hint">Compare your photo with the Discogs cover.</p>
+      <div class="opts">
+        <button class="opt" data-album="yes"><span class="kn">1</span>Yes, that's it</button>
+        <button class="opt" data-album="no"><span class="kn">2</span>No, wrong album</button>
+      </div></div>`;
+  }
+  const rem = remaining(r), nq = nextQuestion(r);
+  const trail = st.answers.length ? `<div class="trail">${st.answers.map(a => `<span>${esc(QK[a.key].q.replace(/\?$/, ""))}: <b>${esc(a.label)}</b></span>`).join("")}
+      <button class="btn small" data-back="1">Back</button></div>` : "";
+  const head = `<div class="basis">${esc(r.pool.basis)}</div><div class="remain">${rem.length} of ${P.length} pressing${P.length > 1 ? "s" : ""} still possible</div>`;
+  let body;
+  if (rem.length === 1) {
+    const p = rem[0];
+    body = `<p class="q">${P.length > 1 ? "That narrows it to one pressing" : "Only one pressing matches"}</p>
+      <div class="result">${coverFor(r, p) ? `<img src="${esc(coverFor(r, p))}" alt="">` : `<span class="ph"></span>`}
+        <div><h4>${esc(p.artist)} – ${esc(p.title)}</h4>${pressingFacts(p)}
+        <a href="${esc(p.url)}" target="_blank" rel="noopener">Check it on Discogs ↗</a></div></div>
+      <div class="actions"><button class="btn confirm" data-confirm="${p.id}">Confirm this pressing</button></div>`;
+  } else if (rem.length === 0) {
+    body = `<p class="q">None of the Discogs pressings match those answers</p>
+      <p class="hint">Go back and change an answer, save it as the album only, or use Edit to paste a Discogs link.</p>
+      <div class="actions"><button class="btn" data-back="1">Back</button>${r.pool.master_id ? `<button class="btn" data-albumonly="1">Save as album only</button>` : ""}</div>`;
+  } else if (nq) {
+    const q = nq.q, total = rem.length;
+    const opts = nq.groups.slice(0, 8);
+    body = `<p class="q">${esc(q.q)}</p>${q.hint ? `<p class="hint">${esc(q.hint)}</p>` : ""}
+      <div class="opts">
+        ${opts.map(([v, n], i) => `<button class="opt ${q.mono ? "mono" : ""}" data-ans="${esc(v)}" data-q="${q.key}"><span class="kn">${i + 1}</span>${esc(v)} <span class="ct">${n} of ${total}</span></button>`).join("")}
+        <button class="opt quiet" data-none="${q.key}">None of these</button>
+        <button class="opt quiet" data-skip="${q.key}"><span class="kn">S</span>Not sure</button>
+      </div>
+      ${q.type ? `<form class="typein" data-type="${q.key}"><input id="type-${r.id}-${q.key}" placeholder="Or type what you see" autocomplete="off"><button class="btn small" type="submit">Use this</button></form>` : ""}`;
+  } else {
+    const top = [...rem].sort((a, b) => (b.have || 0) - (a.have || 0));
+    body = `<p class="q">These ${rem.length} pressings look alike</p>
+      <p class="hint">Discogs doesn't record a difference I can ask about. Pick one if something below matches, or save it as the album only. The most common pressing is first.</p>
+      <div class="shortlist">${top.map(p => shortRow(p, "This one")).join("")}</div>
+      ${r.pool.master_id ? `<div class="actions"><button class="btn" data-albumonly="1">Save as album only</button></div>` : ""}`;
+  }
+  const all = P.length > 1 ? `<details class="all"><summary>See all ${P.length} pressings instead</summary>
+      <div class="shortlist">${[...P].sort((a, b) => (b.have || 0) - (a.have || 0)).map(p => shortRow(p, "This one")).join("")}</div></details>` : "";
+  return `<div class="guide">${head}${trail}${body}${all}</div>`;
+}
+
+function recHTML(r, idx) {
+  const d = cur(r), st = statusOf(r);
+  const base = S.data.photoBase, P = pool(r);
+  const rem = P.length ? remaining(r) : [];
+  const p1 = rem.length === 1 ? rem[0] : null;
+  const shownCover = coverFor(r, p1);
+  const t = topCand(r);
+  let name = d && d.status !== "rejected" ? { artist: d.artist, title: d.title }
+    : p1 ? { artist: p1.artist, title: p1.title }
+    : P.length ? { artist: P[0].artist, title: P[0].title } : { artist: r.artist, title: r.title };
+  const guessDiffers = (r.title || r.artist) && (norm(r.title) !== norm(name.title));
+  return `<article class="rec" data-id="${r.id}" data-status="${st}" data-idx="${idx}">
+    <div>
+      <div class="col-label">Your photo${r.photos.length > 1 ? "s" : ""}</div>
+      <img class="photo-main" src="${base}${r.photos[0]}.jpg" alt="Photo ${r.photos[0]}">
+      ${r.photos.length > 1 ? `<div class="thumbs">${r.photos.map((p, i) => `<img src="${base}${p}.jpg" class="${i ? "" : "on"}" alt="Photo ${p}">`).join("")}</div>` : ""}
+    </div>
+    <div>
+      <div class="col-label">Discogs cover</div>
+      ${shownCover ? `<img class="cover" src="${esc(shownCover)}" alt="Discogs cover">` : `<div class="nocover">${t ? "No cover image on Discogs" : "No Discogs match found"}</div>`}
+    </div>
+    <div class="details">
+      <div class="top">
+        <div class="guess">
+          <h2>${esc(name.title || "Unknown title")}</h2>
+          <div class="artist">${esc(name.artist || "Unknown artist")}</div>
+          ${guessDiffers ? `<div class="note">From the photo I read: ${esc([r.artist, r.title].filter(Boolean).join(" – "))}</div>` : ""}
+        </div>
+        <div class="chips">
+          ${st !== "todo" ? `<span class="chip st-${st}">${st}</span>` : ""}
+          <span class="chip ${esc(r.confidence)}">${esc(r.confidence)} confidence</span>
+        </div>
+      </div>
+      ${r.notes ? `<div class="note">${esc(r.notes)}</div>` : ""}
+      ${guideHTML(r)}
+      <div class="actions">
+        <button class="btn" data-a="edit">Edit</button>
+        <button class="btn reject" data-a="reject">Reject</button>
+        ${st !== "todo" ? `<button class="btn" data-a="undo">Undo decision</button>` : ""}
+      </div>
+      ${S.editing[r.id] ? editForm(r, name, d) : ""}
+    </div>
+  </article>`;
+}
+function editForm(r, name, d) {
+  return `<form class="edit">
+    <label>Artist<input id="artist-${r.id}" name="artist" value="${esc(name.artist)}"></label>
+    <label>Title<input id="title-${r.id}" name="title" value="${esc(name.title)}"></label>
+    <label>Label<input id="label-${r.id}" name="label" value="${esc((d && d.label) || r.label || "")}"></label>
+    <label>Catalog #<input id="catno-${r.id}" name="catno" value="${esc((d && d.catno) || r.catno || "")}"></label>
+    <label class="wide">Discogs release link or ID (optional)<input id="rel-${r.id}" name="release" placeholder="https://www.discogs.com/release/123456 or 123456" value="${d && d.status === "edited" && d.release_id ? d.release_id : ""}"></label>
+    <label class="wide">Note<textarea id="note-${r.id}" name="note" rows="2">${esc(d?.note || "")}</textarea></label>
+    <div class="row"><button class="btn confirm" type="submit">Save edit</button><button class="btn" type="button" data-a="cancel">Cancel</button></div>
+  </form>`;
+}
+
+function render(keepScroll) {
+  if (!S.data) return;
+  renderHeader();
+  const vis = visible();
+  $("#list").innerHTML = vis.length ? vis.map((r, i) => recHTML(r, i)).join("")
+    : `<p class="notice">${S.filter === "todo" ? "Everything in this batch has been reviewed. Tell Claude to run the export." : "No records match this filter."}</p>`;
+  S.focus = Math.min(S.focus, Math.max(vis.length - 1, 0));
+  markFocus(!keepScroll);
+  const un = S.data.unused || [];
+  $("#unusedSec").hidden = !un.length;
+  $("#unused").innerHTML = un.map(p => `<img src="${S.data.photoBase}${p}.jpg" alt="Unassigned photo ${p}" title="${p}">`).join("");
+}
+function rerenderCard(r) {
+  const el = document.querySelector(`.rec[data-id="${r.id}"]`);
+  if (!el) return render(true);
+  const tmp = document.createElement("div");
+  tmp.innerHTML = recHTML(r, +el.dataset.idx);
+  el.replaceWith(tmp.firstElementChild);
+  markFocus(false);
+}
+function markFocus(scroll) {
+  document.querySelectorAll(".rec").forEach(el => el.classList.toggle("focus", +el.dataset.idx === S.focus));
+  const el = document.querySelector(`.rec[data-idx="${S.focus}"]`);
+  if (el && scroll) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+/* ---------- Saving ---------- */
+async function save(r, body) {
+  const prev = S.decisions[r.id];
+  if (body) S.decisions[r.id] = body; else delete S.decisions[r.id];
+  if (!body) S.guide[r.id] = null;
+  render(true);
+  if (!S.db) { const m = "Not saved: this view can't store decisions. Open the artifact on claude.ai while signed in."; notice(m); toast(m, true); return; }
+  try {
+    if (body) await S.db.doc("decisions/" + docId(r.id)).set(body);
+    else await S.db.doc("decisions/" + docId(r.id)).delete();
+    toast(body ? `Saved ${body.status}: ${[body.artist, body.title].filter(Boolean).join(" – ")}` : "Decision cleared");
+  } catch (e) {
+    if (prev) S.decisions[r.id] = prev; else delete S.decisions[r.id];
+    render(true);
+    const msg = e && e.code === "invalid_argument" ? "You have view-only access, so decisions can't be saved." : `Couldn't save that decision (${(e && e.code) || "error"}). Try again in a moment.`;
+    notice(msg); toast(msg, true);
+  }
+}
+function base(r, status) {
+  return { batch: S.data.batch, record: r.id, round: r.round || 0, status, photos: r.photos, updated: new Date().toISOString() };
+}
+function answersText(r) { return g(r).answers.map(a => `${QK[a.key].q.replace(/\?$/, "")}: ${a.label}`); }
+function confirmPressing(r, p) {
+  save(r, { ...base(r, "confirmed"), type: "release", release_id: p.id, master_id: r.pool.master_id || null, level: "pressing",
+    artist: p.artist, title: p.title, label: p.label, catno: p.catno, year: p.year || null, country: p.country,
+    format: [...(p.descriptions || []), p.vinyl_text].filter(Boolean).join(", "), discogs_title: `${p.artist} – ${p.title}`,
+    answers: answersText(r) });
+}
+function confirmAlbum(r) {
+  const p = pool(r)[0] || {};
+  save(r, { ...base(r, "confirmed"), type: "master", release_id: r.pool.master_id, master_id: r.pool.master_id, level: "album",
+    artist: p.artist || r.artist, title: p.title || r.title, label: "", catno: "", discogs_title: `${p.artist || r.artist} – ${p.title || r.title}`,
+    answers: answersText(r) });
+}
+
+/* ---------- Events ---------- */
+function recOf(el) { const art = el.closest(".rec"); return art && S.data.records.find(x => x.id === art.dataset.id); }
+function answer(r, key, opt) {
+  const st = g(r), nq = nextQuestion(r);
+  const values = nq ? nq.groups.map(([v]) => v) : [];
+  if (opt.skip) st.answers.push({ key, skip: true, label: "Not sure" });
+  else if (opt.none) st.answers.push({ key, none: true, values, label: "None of these" });
+  else if (opt.typed) st.answers.push({ key, typed: opt.typed, label: opt.typed });
+  else st.answers.push({ key, value: opt.value, label: opt.value });
+  rerenderCard(r);
+}
+
+document.addEventListener("click", e => {
+  const f = e.target.closest("[data-f]");
+  if (f) { S.filter = f.dataset.f; S.focus = 0; render(); return; }
+  if (e.target.closest(".lightbox")) { e.target.closest(".lightbox").remove(); return; }
+  if (e.target.closest("a, summary")) return;
+  const art = e.target.closest(".rec");
+  if (!art) { if (e.target.matches(".unused img")) lightbox(e.target.src); return; }
+  const r = recOf(art);
+  S.focus = +art.dataset.idx; markFocus(false);
+  const th = e.target.closest(".thumbs img");
+  if (th) { $(".photo-main", art).src = th.src; art.querySelectorAll(".thumbs img").forEach(i => i.classList.toggle("on", i === th)); return; }
+  if (e.target.matches(".photo-main, .cover")) { lightbox(e.target.src); return; }
+  const el = e.target.closest("[data-album],[data-ans],[data-none],[data-skip],[data-back],[data-confirm],[data-pick],[data-albumonly],[data-a]");
+  if (!el) return;
+  const st = g(r), ds = el.dataset;
+  if (ds.album) { if (ds.album === "yes") { st.albumOk = true; rerenderCard(r); } else { S.editing[r.id] = true; rerenderCard(r); $("form.edit input", document.querySelector(`.rec[data-id="${r.id}"]`))?.focus(); } }
+  else if (ds.ans != null) answer(r, ds.q, { value: ds.ans });
+  else if (ds.none) answer(r, ds.none, { none: true });
+  else if (ds.skip) answer(r, ds.skip, { skip: true });
+  else if (ds.back) { if (st.answers.length) st.answers.pop(); else st.albumOk = null; rerenderCard(r); }
+  else if (ds.confirm || ds.pick) { const p = pool(r).find(p => String(p.id) === (ds.confirm || ds.pick)); if (p) confirmPressing(r, p); }
+  else if (ds.albumonly) confirmAlbum(r);
+  else if (ds.a === "reject") save(r, base(r, "rejected"));
+  else if (ds.a === "undo") save(r, null);
+  else if (ds.a === "edit") { S.editing[r.id] = !S.editing[r.id]; rerenderCard(r); }
+  else if (ds.a === "cancel") { S.editing[r.id] = false; rerenderCard(r); }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const r = recOf(e.target);
+  if (e.target.matches(".typein")) {
+    const v = $("input", e.target).value.trim();
+    if (v) answer(r, e.target.dataset.type, { typed: v });
+    return;
+  }
+  const fd = new FormData(e.target), relRaw = String(fd.get("release") || "").trim();
+  const m = relRaw.match(/(?:release\/)?(\d{3,})/), mm = relRaw.match(/master\/(\d+)/);
+  S.editing[r.id] = false;
+  save(r, { ...base(r, "edited"),
+    type: mm ? "master" : m ? "release" : null, release_id: mm ? +mm[1] : m ? +m[1] : null, master_id: mm ? +mm[1] : (r.pool && r.pool.master_id) || null,
+    level: mm ? "album" : m ? "pressing" : null, manual_release: !!(m || mm),
+    artist: fd.get("artist"), title: fd.get("title"), label: fd.get("label"), catno: fd.get("catno"), note: fd.get("note"),
+    answers: answersText(r) });
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "Escape") { document.querySelector(".lightbox")?.remove(); return; }
+  const vis = visible(); if (!vis.length) return;
+  const k = e.key.toLowerCase(), r = vis[S.focus], art = document.querySelector(`.rec[data-idx="${S.focus}"]`);
+  if (!art) return;
+  const click = sel => { const b = art.querySelector(sel); if (b) b.click(); return !!b; };
+  if (k === "j") { S.focus = Math.min(S.focus + 1, vis.length - 1); markFocus(true); }
+  else if (k === "k") { S.focus = Math.max(S.focus - 1, 0); markFocus(true); }
+  else if (/^[1-9]$/.test(k)) { const opts = art.querySelectorAll(".guide .opt:not(.quiet)"); opts[+k - 1]?.click(); }
+  else if (k === "s") click("[data-skip]");
+  else if (k === "b") click("[data-back]");
+  else if (k === "c") click("[data-confirm]");
+  else if (k === "r") click('[data-a="reject"]');
+  else if (k === "u") click('[data-a="undo"]');
+  else if (k === "e") { e.preventDefault(); click('[data-a="edit"]'); }
+});
+let toastTimer;
+function toast(msg, bad) {
+  const t = $("#toast"); t.textContent = msg; t.className = bad ? "bad" : ""; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, bad ? 7000 : 2500);
+}
+function lightbox(src) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${src}" alt="">`; document.body.appendChild(d); }
+
+(async function start() {
+  try {
+    const res = await fetch("batch.json", { cache: "no-store" });
+    S.data = await res.json();
+  } catch { notice("The batch data didn't load. Ask Claude to republish the review page."); return; }
+  $("#batchName").textContent = "Batch " + S.data.batch + " · " + S.data.records.length + " records";
+  render(true);
+  const db = window.claude?.use ? await window.claude.use("db") : null;
+  if (!db) { notice("Decisions can't be saved in this view. Open the artifact on claude.ai while signed in."); return; }
+  S.db = db;
+  const timer = setTimeout(() => notice("Saved decisions can't be reached yet. What you see may be out of date."), 10000);
+  db.collection("decisions").where("batch", "==", S.data.batch).onSnapshot(snap => {
+    if (!snap.metadata.fromCache) { clearTimeout(timer); notice(""); }
+    const next = {};
+    snap.docs.forEach(d => { const v = d.data(); if (v && v.record) next[v.record] = v; });
+    S.decisions = next;
+    // Don't redraw while someone is typing in a form.
+    if (!document.activeElement || !document.activeElement.closest("form")) render(true);
+  }, () => { clearTimeout(timer); notice("Lost the connection to saved decisions. Reload the page to reconnect."); });
+})();
+</script>
