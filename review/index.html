@@ -599,7 +599,7 @@ async function refreshStatus() {
     const res = await R.mcp.callTool(HOST, "status", {}, { cache: false });
     R.status = res.payload; R.ok = true; R.err = "";
   } catch (e) {
-    R.err = errText(e);
+    R.err = errText(e) + (e && e.code ? ` [${e.code}]` : "");
     if (["server_not_connected", "not_in_manifest", "approval_required", "not_granted", "capability_disabled"].includes(e.code)) R.ok = false;
   }
   const job = R.status && R.status.job;
