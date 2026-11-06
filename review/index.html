@@ -564,30 +564,57 @@ function I(path) {
   const hit = R.imgs.get(path);
   return hit ? `src="${hit}" data-h="${esc(path)}"` : `data-h="${esc(path)}"`;
 }
-async function hydrate() {
+// Images come from the local server one call each, and the Claude app rate-limits those
+// calls. So: load only images near the screen, one at a time, never retry a failure on
+// redraw, and back off completely when the app says the limit is hit.
+const Q = { list: [], queued: new Set(), failed: new Set(), coolUntil: 0, running: false, io: null };
+const isRate = e => e && (e.code === "rate_limited" || /rate limit/i.test(e.message || ""));
+function hydrate() {
   if (!R.ok || R.static || !S.data) return;
-  const paths = [...new Set([...document.querySelectorAll("img[data-h]:not([src])")].map(i => i.dataset.h))]
-    .filter(p => !R.pending.has(p));
-  const batch = S.data.batch;
-  const one = async path => {
-    R.pending.add(path);
+  if (!Q.io) Q.io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      Q.io.unobserve(en.target);
+      const path = en.target.dataset.h;
+      if (R.imgs.has(path)) { en.target.src = R.imgs.get(path); return; }
+      if (!Q.queued.has(path) && !Q.failed.has(path)) { Q.queued.add(path); Q.list.push(path); }
+    });
+    pump();
+  }, { rootMargin: "600px 0px" });
+  document.querySelectorAll("img[data-h]:not([src])").forEach(img => {
+    if (R.imgs.has(img.dataset.h)) img.src = R.imgs.get(img.dataset.h); else Q.io.observe(img);
+  });
+}
+async function pump() {
+  if (Q.running) return;
+  Q.running = true;
+  while (Q.list.length) {
+    const wait = Q.coolUntil - Date.now();
+    if (wait > 0 || R.busy) { setTimeout(pump, Math.max(wait, 500)); break; }
+    const path = Q.list.shift(), batch = S.data.batch;
     try {
       const res = await R.mcp.callTool(HOST, "get_image", { batch, path }, { cache: { staleTime: 3600e3, gcTime: 3600e3 } });
-      const b = (res.content || []).find(c => c.type === "image");
-      if (b) {
-        const url = `data:${b.mimeType};base64,${b.data}`;
+      const blk = (res.content || []).find(c => c.type === "image");
+      if (blk && S.data.batch === batch) {
+        const url = `data:${blk.mimeType};base64,${blk.data}`;
         R.imgs.set(path, url);
         document.querySelectorAll(`img[data-h="${CSS.escape(path)}"]`).forEach(i => { i.src = url; });
       }
-    } catch { /* keep the grey placeholder */ }
-    R.pending.delete(path);
-  };
-  for (let i = 0; i < paths.length; i += 4) await Promise.all(paths.slice(i, i + 4).map(one));
+      Q.queued.delete(path);
+    } catch (e) {
+      if (isRate(e)) { Q.list.unshift(path); Q.coolUntil = Date.now() + Math.max(e.retryAfterMs || 0, 15000); }
+      else { Q.queued.delete(path); Q.failed.add(path); }
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  Q.running = false;
 }
 function errText(e) {
+  if (isRate(e) && e.code !== "rate_limited") e = { ...e, code: "rate_limited" };
   switch (e && e.code) {
     case "server_not_connected": return "Can't reach the record-pipeline server. Open this artifact in the Claude desktop app on the computer that has the pipeline (setup is in the README).";
     case "cancelled": return "You declined the request in the Claude app, so nothing ran.";
+    case "rate_limited": return "The Claude app is limiting calls to the pipeline for a moment. Wait about 15 seconds and try again.";
     case "approval_required": case "not_in_manifest": return "This page isn't allowed to use the record-pipeline server. Allow it in the artifact's Permissions menu.";
     case "tool_error": { const c = e.result && e.result.content && e.result.content[0]; return (c && c.text) || e.message; }
     default: return (e && e.message) || "The pipeline didn't answer.";
@@ -614,7 +641,7 @@ async function refreshStatus() {
   }
   if ((ours && running) || (R.waitFor && Date.now() - R.waitFor.t > 90000)) R.waitFor = null;
   R.lastJob = job;
-  if (running || R.waitFor) R.poll = setTimeout(refreshStatus, 4000);
+  if (running || R.waitFor) R.poll = setTimeout(refreshStatus, 6000);
   renderRunner();
 }
 function renderRunner() {
@@ -651,19 +678,30 @@ function renderRunner() {
 }
 async function runAction(kind) {
   if (kind === "refresh") { await refreshStatus(); return; }
-  R.busy = true; renderRunner();
-  try {
-    if (kind === "intake") {
-      await R.mcp.callTool(HOST, "start_intake", {});
-      toast("Processing the new photos. This takes a few minutes; you'll see each step here.");
-    } else {
-      const decisions = {};
-      S.data.records.forEach(r => { const d = cur(r); if (d) decisions[r.id] = d; });
-      await R.mcp.callTool(HOST, "finish_review", { batch: S.data.batch, decisions });
-      toast("Started. Edited and rejected records get re-searched; if none, it exports and adds them to Discogs.");
-    }
+  R.busy = true; renderRunner();  // image loading pauses while busy, so the action goes first
+  const call = () => {
+    if (kind === "intake") return R.mcp.callTool(HOST, "start_intake", {});
+    const decisions = {};
+    S.data.records.forEach(r => { const d = cur(r); if (d) decisions[r.id] = d; });
+    return R.mcp.callTool(HOST, "finish_review", { batch: S.data.batch, decisions });
+  };
+  const started = () => {
+    toast(kind === "intake" ? "Processing the new photos. This takes a few minutes; you'll see each step here."
+      : "Started. Edited and rejected records get re-searched; if none, it exports and adds them to Discogs.");
     R.waitFor = { after: R.status && R.status.job ? R.status.job.job : null, t: Date.now() };
-  } catch (e) { toast(errText(e), true); }
+  };
+  try { await call(); started(); }
+  catch (e) {
+    if (isRate(e)) {
+      // The app refused the call before it reached the server; wait out the limit and retry once.
+      // (The server also refuses a second run while one is going, so this can't start two.)
+      const ms = Math.max(e.retryAfterMs || 0, 15000);
+      Q.coolUntil = Date.now() + ms + 5000;
+      toast(`The Claude app is limiting calls for a moment. Retrying in ${Math.round(ms / 1000)} seconds…`);
+      await new Promise(r => setTimeout(r, ms));
+      try { await call(); started(); } catch (e2) { toast(errText(e2), true); }
+    } else toast(errText(e), true);
+  }
   R.busy = false;
   await refreshStatus();
 }
@@ -689,6 +727,7 @@ function subscribe() {
 }
 function showBatch(data, fromStatic) {
   R.static = !!fromStatic;
+  if (S.data && S.data.batch !== data.batch) { Q.list = []; Q.queued.clear(); Q.failed.clear(); R.imgs.clear(); }
   S.data = data; S.decisions = {}; S.guide = {}; S.editing = {}; S.focus = 0;
   if (!fromStatic) { try { localStorage.setItem("batch", data.batch); } catch {} }
   $("#batchName").textContent = "Batch " + data.batch + " · " + data.records.length + " records";
