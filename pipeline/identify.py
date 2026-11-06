@@ -2,10 +2,13 @@
 
 Usage: python pipeline/identify.py <batch>            identify every photo -> ident.json
        python pipeline/identify.py <batch> --reident  re-read only records flagged needs_reident
-Claude reads the photos itself and may use pipeline/search.py to check Discogs.
+Claude reads the photos itself and may use pipeline/search.py to check Discogs. It returns
+the records as JSON in its reply and this script writes ident.json: Claude Code won't write
+inside ~/.claude/ (where this project lives) even with edits auto-accepted.
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -35,17 +38,17 @@ filename with capture time). Photos are JPGs at work/{batch}/<file>.
 3. Check doubtful ones on Discogs with: python pipeline/search.py key=value ...
    (keys: q, barcode, catno, artist, release_title, label, format, track; or release=<id> for
    full details incl. track list). Use it to confirm artist/title, not to guess the pressing.
-4. Write the result with the Write tool to work/{batch}/ident.json: a JSON array, records
-   numbered r01, r02, ... in photo order.
+4. Do NOT write any files. Records are numbered r01, r02, ... in photo order.
 
 {schema}
 
-When done, reply with one line: the number of records and how many are low confidence."""
+Your final reply must be ONLY the JSON array of records, in a ```json code block, nothing else."""
 
 REIDENT = """You are re-identifying vinyl records whose earlier identification the owner REJECTED.
 Working directory: {root}
 
-In work/{batch}/ident.json, these records have "needs_reident": true: {ids}.
+These records need re-identifying (current, rejected data):
+{records}
 For each one:
 1. Read its photos (work/{batch}/photos/<photo id>.jpg) with the Read tool and look again,
    carefully: small print, track names, credits, barcode digits, catalog numbers, label logos.
@@ -54,14 +57,13 @@ For each one:
 3. Check on Discogs with: python pipeline/search.py key=value ...
    (keys: q, barcode, catno, artist, release_title, label, format, track; or release=<id>).
    Barcodes may be stored with spaces; track-title searches (q="track names") often work.
-4. Edit work/{batch}/ident.json: update artist, title, label, catno, barcode, confidence and notes
-   (say what new evidence you used) and REMOVE the "needs_reident" key. Keep "exclude" and "round".
-   If you truly cannot identify it, leave artist/title "", set confidence "low", explain in notes,
-   and still remove "needs_reident".
+4. Do NOT write any files. Update artist, title, label, catno, barcode, confidence and notes
+   (say what new evidence you used). Keep the same id and photos. If you truly cannot identify
+   it, leave artist/title "", set confidence "low" and explain in notes.
 
 {schema}
 
-When done, reply with one line per record: id, artist – title."""
+Your final reply must be ONLY a JSON array of the updated records, in a ```json code block."""
 
 
 def claude_bin():
@@ -73,18 +75,42 @@ def run_claude(prompt):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDECODE", "CLAUDE_", "ANTHROPIC_"))}
     cmd = [claude_bin(), "-p", prompt, "--output-format", "json",
            "--permission-mode", "acceptEdits",
-           "--allowedTools", "Read", "Write", "Edit", "Glob", "Bash(python pipeline/search.py:*)"]
+           "--allowedTools", "Read", "Glob", "Bash(python pipeline/search.py:*)"]
     r = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8",
                        timeout=60 * 60)
     if r.returncode != 0:
         raise SystemExit(f"claude failed ({r.returncode}): {r.stderr[-2000:] or r.stdout[-2000:]}")
     try:
         out = json.loads(r.stdout)
-        print(out.get("result", "").strip())
-        if out.get("is_error"):
-            raise SystemExit("claude reported an error")
     except json.JSONDecodeError:
-        print(r.stdout[-2000:])
+        raise SystemExit("unexpected output from claude: " + r.stdout[-2000:])
+    text = (out.get("result") or "").strip()
+    if out.get("is_error"):
+        raise SystemExit("claude reported an error: " + text[-2000:])
+    return parse_records(text)
+
+
+def parse_records(text):
+    """The JSON array from Claude's reply (fenced or bare)."""
+    m = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.S)
+    raw = m.group(1) if m else text[text.find("["): text.rfind("]") + 1]
+    try:
+        recs = json.loads(raw)
+    except ValueError:
+        raise SystemExit("couldn't read records from claude's reply: " + text[-3000:])
+    if not isinstance(recs, list) or not all(isinstance(r, dict) and r.get("id") for r in recs):
+        raise SystemExit("claude's reply wasn't a list of records: " + text[-3000:])
+    return recs
+
+
+def clean(r):
+    r.setdefault("photos", [])
+    for k in ("artist", "title", "label", "catno", "barcode", "notes"):
+        r[k] = str(r.get(k) or "")
+    r["barcode"] = "".join(c for c in r["barcode"] if c.isdigit())
+    if r.get("confidence") not in ("high", "medium", "low"):
+        r["confidence"] = "low"
+    return r
 
 
 def main():
@@ -93,22 +119,29 @@ def main():
     path = bdir / "ident.json"
     if "--reident" in sys.argv:
         idents = json.loads(path.read_text(encoding="utf-8"))
-        ids = [r["id"] for r in idents if r.get("needs_reident")]
-        if not ids:
+        todo = [r for r in idents if r.get("needs_reident")]
+        if not todo:
             print("nothing to re-identify")
             return
-        run_claude(REIDENT.format(root=ROOT, batch=batch, ids=", ".join(ids), schema=SCHEMA))
+        shown = [{k: r.get(k) for k in ("id", "photos", "artist", "title", "label", "catno", "barcode", "notes", "exclude")}
+                 for r in todo]
+        new = {r["id"]: r for r in run_claude(REIDENT.format(
+            root=ROOT, batch=batch, records=json.dumps(shown, indent=1, ensure_ascii=False), schema=SCHEMA))}
+        for r in idents:
+            if r["id"] in new:
+                upd = new[r["id"]]
+                for k in ("artist", "title", "label", "catno", "barcode", "confidence", "notes"):
+                    if k in upd:
+                        r[k] = upd[k]
+                r.pop("needs_reident", None)
+                clean(r)
+                print(r["id"], r["artist"], "-", r["title"])
     else:
-        run_claude(NEW.format(root=ROOT, batch=batch, schema=SCHEMA))
-    idents = json.loads(path.read_text(encoding="utf-8"))  # validates the JSON
-    for r in idents:
-        r.setdefault("photos", [])
-        for k in ("artist", "title", "label", "catno", "barcode", "notes"):
-            r[k] = r.get(k) or ""
-        r.setdefault("confidence", "low")
+        idents = [clean(r) for r in run_claude(NEW.format(root=ROOT, batch=batch, schema=SCHEMA))]
+        for r in idents:
+            print(r["id"], r["artist"] or "?", "-", r["title"] or "?", f"({r['confidence']})")
     path.write_text(json.dumps(idents, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"{len(idents)} records in ident.json; {sum(1 for r in idents if r.get('needs_reident'))} still flagged")
-
 
 if __name__ == "__main__":
     main()

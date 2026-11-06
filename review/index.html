@@ -248,7 +248,7 @@ function statusOf(r) { return cur(r)?.status || "todo"; }
 function matches(r, f = S.filter) {
   const st = statusOf(r);
   if (f === "todo") return st === "todo";
-  if (f === "low") return r.confidence === "low";
+  if (f === "low") return r.confidence === "low" && st === "todo";  // decided records leave this list
   if (f === "all") return true;
   return st === f;
 }
@@ -664,7 +664,8 @@ function renderRunner() {
   const finishLabel = redo ? `re-search ${redo} edited/rejected` : info && info.added ? "export again" : "export & add to Discogs";
   const dis = running || R.busy;
   const acts = R.ok ? `<div class="ractions">
-      <button class="btn confirm" data-run="intake" ${dis || !st.unsorted ? "disabled" : ""}>Process ${st.unsorted ? st.unsorted + " " : ""}new photo${st.unsorted === 1 ? "" : "s"}</button>
+      <button class="btn confirm" data-run="intake" ${dis || !(st.unsorted || st.resumable) ? "disabled" : ""}>${st.resumable
+        ? `Resume batch ${esc(st.resumable)}` : `Process ${st.unsorted ? st.unsorted + " " : ""}new photo${st.unsorted === 1 ? "" : "s"}`}</button>
       ${S.data && !R.static ? `<button class="btn" data-run="finish" ${dis || open ? "disabled" : ""}>Finish review: ${finishLabel}</button>` : ""}
       <button class="btn small" data-run="refresh" ${R.busy ? "disabled" : ""}>Refresh</button>${pick}</div>`
     : `<div class="ractions"><button class="btn small" data-run="refresh">Try again</button></div>`;

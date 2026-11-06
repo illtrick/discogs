@@ -35,7 +35,7 @@ TOOLS = [
     {"name": "get_image", "description": "A batch photo (photos/<batch>/pNNN.jpg) or cover (covers/rNNN.jpg) as JPEG.",
      "inputSchema": {"type": "object", "properties": {"batch": {"type": "string"}, "path": {"type": "string"}},
                      "required": ["batch", "path"]}, "annotations": {"readOnlyHint": True}},
-    {"name": "start_intake", "description": "Process the photos in unsorted/ into a new review batch.",
+    {"name": "start_intake", "description": "Process the photos in unsorted/ into a new review batch, or resume one that stopped part-way.",
      "inputSchema": {"type": "object", "properties": {}}, "annotations": {"readOnlyHint": False}},
     {"name": "finish_review",
      "description": "Save review decisions for a batch, then re-search edited/rejected records or, when all are "
@@ -106,6 +106,14 @@ def batches():
     return out
 
 
+def resumable():
+    """An intake that stopped part-way, which start_intake will pick up again."""
+    for d in sorted((p for p in WORK.iterdir() if p.is_dir() and BATCH_RE.match(p.name)), reverse=True):
+        if (d / "photos.json").exists() and not (d / "batch.json").exists():
+            return d.name
+    return None
+
+
 def spawn(*args):
     job = job_status()
     if job and job.get("state") == "running":
@@ -128,7 +136,7 @@ def call(name, a):
     if name == "status":
         unsorted = [p.name for p in (ROOT / "unsorted").iterdir() if p.suffix.lower() in EXTS] \
             if (ROOT / "unsorted").exists() else []
-        return {"unsorted": len(unsorted), "job": job_status(), "batches": batches()}
+        return {"unsorted": len(unsorted), "resumable": resumable(), "job": job_status(), "batches": batches()}
     if name == "get_batch":
         data = read_json(batch_dir(a.get("batch")) / "batch.json")
         if data is None:
@@ -149,7 +157,7 @@ def call(name, a):
         im.convert("RGB").save(buf, "JPEG", quality=78)
         return {"__image__": base64.b64encode(buf.getvalue()).decode()}
     if name == "start_intake":
-        if not any(p.suffix.lower() in EXTS for p in (ROOT / "unsorted").iterdir()):
+        if not resumable() and not any(p.suffix.lower() in EXTS for p in (ROOT / "unsorted").iterdir()):
             raise ToolError("There are no photos in the unsorted folder.")
         return spawn("intake")
     if name == "finish_review":

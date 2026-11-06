@@ -75,29 +75,55 @@ def py(script, *args):
     return (str(ROOT / "pipeline" / f"{script}.py"), *args)
 
 
+def unfinished_batch():
+    """A batch whose intake stopped part-way (photos converted, no review data yet)."""
+    for d in sorted((ROOT / "work").iterdir(), reverse=True):
+        if d.is_dir() and (d / "photos.json").exists() and not (d / "batch.json").exists():
+            return d.name
+    return None
+
+
 def intake():
-    photos = [p for p in (ROOT / "unsorted").iterdir() if p.suffix.lower() in EXTS]
-    if not photos:
-        raise SystemExit("no photos in unsorted/")
-    batch = new_batch_name()
+    """Resume an unfinished batch if there is one, else start a new batch from unsorted/."""
+    batch = unfinished_batch()
+    resume = batch is not None
+    if not resume:
+        if not [p for p in (ROOT / "unsorted").iterdir() if p.suffix.lower() in EXTS]:
+            raise SystemExit("no photos in unsorted/")
+        batch = new_batch_name()
+    bdir = ROOT / "work" / batch
     job = Job("intake", batch, ["Convert photos", "Identify records", "Search Discogs", "Add pressing details",
                                 "List possible pressings", "Build review"])
     try:
-        job.step("Convert photos", *py("prep", batch))
-        # Originals leave unsorted/ right away so the next intake never re-processes them.
-        dest = ROOT / "processed" / batch
-        dest.mkdir(parents=True, exist_ok=True)
-        for p in json.loads((ROOT / "work" / batch / "photos.json").read_text()):
-            src = ROOT / "unsorted" / p["source"]
-            if src.exists():
-                shutil.move(str(src), dest / p["source"])
-        job.step("Identify records", *py("identify", batch))
+        if resume:
+            job.s["done"].append("Convert photos")  # already done by the run that stopped
+            job.save()
+            # Copies of this batch's originals put back in unsorted/ (to re-enable the button)
+            # are duplicates of what's in processed/<batch>/: drop them so they aren't re-imported.
+            for p in json.loads((bdir / "photos.json").read_text()):
+                src, kept = ROOT / "unsorted" / p["source"], ROOT / "processed" / batch / p["source"]
+                if src.exists() and kept.exists() and src.stat().st_size == kept.stat().st_size:
+                    src.unlink()
+        else:
+            job.step("Convert photos", *py("prep", batch))
+            # Originals leave unsorted/ right away so the next intake never re-processes them.
+            dest = ROOT / "processed" / batch
+            dest.mkdir(parents=True, exist_ok=True)
+            for p in json.loads((bdir / "photos.json").read_text()):
+                src = ROOT / "unsorted" / p["source"]
+                if src.exists():
+                    shutil.move(str(src), dest / p["source"])
+        if (bdir / "ident.json").exists():
+            job.s["done"].append("Identify records")
+            job.save()
+        else:
+            job.step("Identify records", *py("identify", batch))
         job.step("Search Discogs", *py("match", batch))
         job.step("Add pressing details", *py("enrich", batch))
         job.step("List possible pressings", *py("pool", batch))
         job.step("Build review", *py("build_review", batch))
-        n = len(json.loads((ROOT / "work" / batch / "ident.json").read_text(encoding="utf-8")))
-        job.finish("review", f"{n} records ready to review")
+        n = len(json.loads((bdir / "ident.json").read_text(encoding="utf-8")))
+        job.finish("review", f"{n} record{'s' if n != 1 else ''} ready to review")
     except BaseException as e:
         job.fail(e)
         raise
